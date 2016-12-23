@@ -11,6 +11,20 @@ var CommentBox = React.createClass({
       }.bind(this)
     });
   },
+  handleCommentSubmit: function(comment) {
+    $.ajax({
+      url: this.props.url,
+      dataType: 'json',
+      type: 'POST',
+      data: comment,
+      success: function(data) {
+        this.setState({ data: this.state.data.concat([data]) });
+      }.bind(this),
+      error: function(xhr, status, err) {
+        console.error(this.props.url, status, err.toString());
+      }.bind(this)
+    });
+  },
   getInitialState: function() {
     return { data: [] };
   },
@@ -23,18 +37,17 @@ var CommentBox = React.createClass({
       <div className="commentBox">
         <h1>Comments</h1>
         <CommentList data={this.state.data} />
-        <CommentForm />
+        <CommentForm onCommentSubmit={this.handleCommentSubmit} />
       </div>
     );
   }
 });
 
 var CommentList = React.createClass({
-
   render: function() {
     var CommentNodes = this.props.data.map(function (comment) {
       return (
-        <Comment author={comment.author}>
+        <Comment key={comment.id} author={comment.author}>
           {comment.text}
         </Comment>
       );
@@ -62,12 +75,29 @@ var Comment = React.createClass({
 });
 
 var CommentForm = React.createClass({
-
+  hundleSubmit: function(e) {
+    e.preventDefault();
+    var author = ReactDOM.findDOMNode(this.refs.author).value.trim();
+    var text   = ReactDOM.findDOMNode(this.refs.text).value.trim();
+    if (!text || !author) {
+      return;
+    }
+    this.props.onCommentSubmit({ author: author, text: text });
+    ReactDOM.findDOMNode(this.refs.author).value = '';
+    ReactDOM.findDOMNode(this.refs.text).value   = '';
+    return;
+  },
   render: function() {
     return (
-      <div className="commentForm">
-        Hello, world! I am a CommentForm
-      </div>
+      <form className="commentForm" onSubmit={this.hundleSubmit}>
+        <div>
+          <input type="text" placeholder="Your name" ref="author" />
+        </div>
+        <div>
+          <textarea rows="5" placeholder="Say something..." ref="text"></textarea>
+        </div>
+        <input type="submit" value="Post" />
+      </form>
     );
   }
 });
